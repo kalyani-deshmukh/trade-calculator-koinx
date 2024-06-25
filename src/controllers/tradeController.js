@@ -3,7 +3,6 @@ const path = require('path');
 const csv = require('csv-parser');
 const Trade = require('../models/trade');
 
-
 const uploadAndProcessCSV = async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -12,10 +11,13 @@ const uploadAndProcessCSV = async (req, res) => {
     const trades = [];
     const filePath = path.resolve(__dirname, '../../uploads', req.file.filename);
 
+    console.log(`Reading file from: ${filePath}`);
+
     fs.createReadStream(filePath)
         .pipe(csv())
         .on('data', (row) => {
             try {
+                console.log(`Processing row: ${JSON.stringify(row)}`);
                 const [baseCoin, quoteCoin] = row['Market'].split('/');
                 const trade = {
                     utcTime: new Date(row['UTC_Time']),
@@ -26,6 +28,7 @@ const uploadAndProcessCSV = async (req, res) => {
                     amount: parseFloat(row['Buy/Sell Amount']),
                     price: parseFloat(row['Price']),
                 };
+                console.log(`Parsed trade: ${JSON.stringify(trade)}`);
                 trades.push(trade);
             } catch (error) {
                 console.error(`Error processing row: ${error.message}`);
@@ -33,6 +36,7 @@ const uploadAndProcessCSV = async (req, res) => {
         })
         .on('end', async () => {
             try {
+                console.log(`Inserting ${trades.length} trades into the database`);
                 await Trade.insertMany(trades);
                 fs.unlinkSync(filePath); // Clean up the uploaded file
                 res.status(201).json({ message: 'Trades uploaded and processed successfully' });
@@ -42,9 +46,6 @@ const uploadAndProcessCSV = async (req, res) => {
             }
         });
 };
-
-
-
 
 const getAssetWiseBalance = async (req, res) => {
     const { timestamp } = req.body;
@@ -57,6 +58,8 @@ const getAssetWiseBalance = async (req, res) => {
         const date = new Date(timestamp);
         const trades = await Trade.find({ utcTime: { $lte: date } });
 
+        console.log(`Found ${trades.length} trades up to ${timestamp}`);
+
         const balances = trades.reduce((acc, trade) => {
             const { baseCoin, amount, operation } = trade;
             if (!acc[baseCoin]) {
@@ -66,8 +69,11 @@ const getAssetWiseBalance = async (req, res) => {
             return acc;
         }, {});
 
+        console.log(`Calculated balances: ${JSON.stringify(balances)}`);
+
         res.status(200).json(balances);
     } catch (error) {
+        console.error(`Error fetching balance: ${error.message}`);
         res.status(500).json({ message: 'Error fetching balance', error });
     }
 };
