@@ -11,13 +11,10 @@ const uploadAndProcessCSV = async (req, res) => {
     const trades = [];
     const filePath = path.resolve(__dirname, '../../uploads', req.file.filename);
 
-    console.log(`Reading file from: ${filePath}`);
-
     fs.createReadStream(filePath)
         .pipe(csv())
         .on('data', (row) => {
             try {
-                console.log(`Processing row: ${JSON.stringify(row)}`);
                 const [baseCoin, quoteCoin] = row['Market'].split('/');
                 const trade = {
                     utcTime: new Date(row['UTC_Time']),
@@ -28,7 +25,7 @@ const uploadAndProcessCSV = async (req, res) => {
                     amount: parseFloat(row['Buy/Sell Amount']),
                     price: parseFloat(row['Price']),
                 };
-                console.log(`Parsed trade: ${JSON.stringify(trade)}`);
+                console.log('Parsed trade:', trade); // Log each parsed trade
                 trades.push(trade);
             } catch (error) {
                 console.error(`Error processing row: ${error.message}`);

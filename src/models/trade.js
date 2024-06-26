@@ -1,3 +1,4 @@
+// models/trade.js
 const mongoose = require('mongoose');
 
 const tradeSchema = new mongoose.Schema({
@@ -10,6 +11,7 @@ const tradeSchema = new mongoose.Schema({
     price: { type: Number, required: true },
 });
 
-const Trade = mongoose.model('Trade', tradeSchema);
+// Ensure the third parameter is the name of your collection
+const Trade = mongoose.model('Trade', tradeSchema, 'trade-db');
 
 module.exports = Trade;
